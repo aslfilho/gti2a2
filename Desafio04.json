@@ -1,0 +1,1493 @@
+{
+  "name": "Desafio04",
+  "nodes": [
+    {
+      "parameters": {
+        "operation": "getAll",
+        "tableId": "CONSOLIDADE_M",
+        "returnAll": true
+      },
+      "name": "Supabase",
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1776,
+        -112
+      ],
+      "id": "a389f647-83a1-4f60-bbb5-e89e374ae3b5",
+      "credentials": {
+        "supabaseApi": {
+          "id": "u8ovGkpsj2wOWk8z",
+          "name": "Supabase agentesemacaoi2a2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "=Você é um agente de inteligência artificial responsável por automatizar o processo mensal de cálculo e compra de Vale Refeição (VR) e Vale Alimentação (VA).\n\n🎯 Objetivo do Agente\nCalcular automaticamente a quantidade correta de dias e o valor de VR/VA a ser concedido a cada colaborador, considerando:\n1. Datas de admissão e desligamento\n2. Períodos de férias (totais ou parciais)\n3. Regras sindicais\n4. Prencha o campo \"Competencia\": \"\" da planilha final todos com data de primeiro de Maio de 2025.\n\n📑 Suas Responsabilidades\n\nValidação e Correção de Dados\n1. Calcular os dias úteis de cada colaborador no mês, conforme sindicato.\n2. Considerar férias, admissões no meio do mês e desligamentos.\n3. Se o colaborador vier sem sindicato, atribua para ele o 'SINDPD SP - SIND.TRAB.EM PROC DADOS E EMPR.EMPRESAS PROC DADOS ESTADO DE SP.'.\n\n\nRegras de Desligamento (COMUNICADO_DE_DESLIGAMENTO)\n\n1. Se o campo \"COMUNICADO_DE_DESLIGAMENTO\" estiver vazio pagar VR mês cheio (todos dias úteis conforme regra de sindicato).\n\n- Se vazio → pagar mês cheio, com todos os dias úteis do sindicato, respeitando a DATA_ADMISSAO.\n- Se = \"OK\":\nDATA_DEMISSAO ≤ dia 15 → não pagar VR → \"Dias\" = 0, \"TOTAL\" = 0;\nManter colaborador no JSON com \"OBS GERAL\": \"Desligado até dia 15 — VR = 0\".\n\n- Se DATA_DEMISSÃO >15/05/2025 e COMUNICADO_DE_DESLIGAMENTO = Null fazer o cálculo do VR considerando os 21 dias úteis do SINDPPD RS - SINDICATO DOS TRAB. EM PROC. DE DADOS RIO GRANDE DO SUL.\nEx.: se DATA_DEMISSAO=2025-05-09 com OK para desligamento calculo VR É ZERO. DATA_DEMISSAO=29/05/2025 sem OK receber VR mes cheio.\n\nCálculo Financeiro\n1. Calcular o valor total de VR/VA para cada colaborador.\n2. Utilizar o valor diário definido por sindicato.\n3. Considerar custo para empresa 80% do valor pago e 20% a ser descontado\ndo profissional.\n\nSaída Esperada\n\nRetorne um array JSON completo, seguindo este formato na raiz do json:\n\n[\n  {\n    \"Matricula\": \"\",\n    \"Admissão\": \"\",\n    \"Sindicato do Colaborador\": \"\",\n    \"Competência\": \"\",\n    \"Dias\": \"\",\n    \"VALOR DIÁRIO VR\": \"\",\n    \"TOTAL\": \"\",\n    \"Custo empresa\": \"\",\n    \"Desconto profissional\": \"\",\n    \"OBS GERAL\": \"\"\n  }\n]\n\n\nCada registro deve corresponder a um colaborador do JSON do campo records\n\nNão omita nenhum colaborador.\n\n🔧 Instruções Técnicas\n\n1. Utilize regras sindicais vigentes para cada colaborador.\n2. O resultado deve ser 100% preciso e auditável.\n3. Consultar a tabela no JSON de entrada para buscar todos os campos.\n4. Não é para você me trazer o prompt do Agente mas sim o arquivo final json conforme solicitado.\n5. Não escrever no chat o que você precisa fazer, so preciso do json com todos os registros.\n\n🔑 Regras Importantes\n\nNunca retorne apenas exemplos ou subconjuntos, nunca retorne fórmulas, expressões matemáticas ou descrições de cálculo.\nSempre retorne apenas o valor final já calculado, como número. “Exemplo de saída incorreta: 'VR_Total': '11 * 35'.” “Exemplo de saída correta: 'VR_Total': 385.”\nNão inclua explicações, etapas de cálculo, nem utilize operadores matemáticos como *, /, +, - nos campos de saída.\nA saída deve ser um array JSON, onde todos os campos numéricos já estejam calculados. \n\n**OBS GERAL deve ser curto, informativo e permanecer em uma única linha, sem quebras, resumindo todas as observações importantes. Deve registrar o motivo (ex.: desligado até dia 15 sem VR, proporcional até data de demissão, férias, sindicato atribuído, etc.).**\n\nSegue abaixo os dados no JSON que precisam ser analisados dentro do JSON no campo records.\n{{ $json.records }}",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -1104,
+        -112
+      ],
+      "id": "14d7538a-2f54-46c8-9cd1-9251c30d14a6",
+      "name": "AI Agent"
+    },
+    {
+      "parameters": {
+        "amount": 1
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        -800,
+        -112
+      ],
+      "id": "9c024c6f-4ecc-48c2-ba44-2bfd7553f9ac",
+      "name": "Wait",
+      "webhookId": "53e5244e-9e7b-49ff-aa37-be336a474c33",
+      "retryOnFail": true,
+      "waitBetweenTries": 10
+    },
+    {
+      "parameters": {
+        "aggregate": "=aggregateAllItemData",
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {}
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        -1280,
+        -336
+      ],
+      "id": "a96c44d1-ad5c-495e-9ddf-cb4ef5641ce7",
+      "name": "Agregar os lotes"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        -800,
+        -336
+      ],
+      "id": "37e5a006-d966-46e3-9029-4cf4e50d6d52",
+      "name": "Convert to File",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "name": "VR MENSAL 05.2025.xlsx",
+        "driveId": {
+          "__rl": true,
+          "value": "https://drive.google.com/drive/u/1/folders/1C4l6SRMKGJDUynVqQINv3PQoDh09D0td",
+          "mode": "url"
+        },
+        "folderId": {
+          "__rl": true,
+          "mode": "list",
+          "value": "root",
+          "cachedResultName": "/ (Root folder)"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -624,
+        -336
+      ],
+      "id": "7bdcd5b1-211f-4c4a-93a5-68481484e307",
+      "name": "Upload file",
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "l1hRZ0WWCsiKKaAz",
+          "name": "Google Drive agentesemacaoi2a2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1t9cBqayuaNJceZHByCT_SXXemEpmXEkE/edit?usp=sharing&ouid=118080699929393858197&rtpof=true&sd=true",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "id": "ce6aedca-83df-4cd0-947a-aae68cd7be3d",
+      "name": "Carregar Base ATIVOS",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -4064,
+        -1424
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "l1hRZ0WWCsiKKaAz",
+          "name": "Google Drive agentesemacaoi2a2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1BhKWgCJaYyc14HZ7ZayukXIOHcLimr7i/edit?usp=drivesdk&ouid=109702412098255451723&rtpof=true&sd=truehttps://docs.google.com/spreadsheets/d/1-hWYYRVd7n_UiBHPLyidUKjBX5ksMbYR/edit?usp=sharing&ouid=118080699929393858197&rtpof=true&sd=true",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "id": "3b4fb379-8d6a-4fd6-86e1-20d9e486abe8",
+      "name": "Carregar Base FÉRIAS",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -4064,
+        -880
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "l1hRZ0WWCsiKKaAz",
+          "name": "Google Drive agentesemacaoi2a2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1ApA9Crlf-OJcxeENLLvIvEq6SF-JWUjc/edit?usp=drivesdk&ouid=109702412098255451723&rtpof=true&sd=truehttps://docs.google.com/spreadsheets/d/13ZrZkm9bvq1FnpHHeAXaxO-RaRCJumfF/edit?usp=sharing&ouid=118080699929393858197&rtpof=true&sd=true",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "id": "af4e5d18-dbbc-4107-b676-006b5c157513",
+      "name": "Carregar Base DESLIGADOS",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -4064,
+        -1248
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "l1hRZ0WWCsiKKaAz",
+          "name": "Google Drive agentesemacaoi2a2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/11Q80XTEGhKh1Mi5ymaoXh1_D_on6AAdZ/edit?usp=drivesdk&ouid=109702412098255451723&rtpof=true&sd=truehttps://docs.google.com/spreadsheets/d/1SpF3bcPpgtgnqzmmUGvHz683Gukz6U39/edit?usp=sharing&ouid=118080699929393858197&rtpof=true&sd=true",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "id": "c0073274-681d-47c0-b840-f98c21c8e2e2",
+      "name": "Carregar Base ADMISSÃO",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -4064,
+        -1056
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "l1hRZ0WWCsiKKaAz",
+          "name": "Google Drive agentesemacaoi2a2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1Qb4QrmxeSQ-LvdvWKU8eENLtoI_U17Kl/edit?usp=drivesdk&ouid=109702412098255451723&rtpof=true&sd=truehttps://docs.google.com/spreadsheets/d/1FxRoC9goktwWXBgVyGpxc02rkcoqMUxW/edit?usp=sharing&ouid=118080699929393858197&rtpof=true&sd=true",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "id": "ee28e86a-a3a8-4160-ae7c-19947412574d",
+      "name": "Carregar Base SINDICATOS",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -4064,
+        -704
+      ],
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "l1hRZ0WWCsiKKaAz",
+          "name": "Google Drive agentesemacaoi2a2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -3760,
+        -1424
+      ],
+      "id": "e77cdc7a-be05-4f7a-8b50-7d2fd5676043",
+      "name": "Extract from ATIVOS"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -3760,
+        -880
+      ],
+      "id": "0f9a2388-68a6-4c01-9caa-b7f02d013229",
+      "name": "Extract from FÉRIAS"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -3760,
+        -1248
+      ],
+      "id": "acaebbe5-1427-4304-8fe9-00a907c0dcbd",
+      "name": "Extract from DESLIGADOS"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -3760,
+        -1056
+      ],
+      "id": "d981707e-4ca5-4b40-a74c-b99819a58d70",
+      "name": "Extract from ADMISSÃO"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -3760,
+        -704
+      ],
+      "id": "0953862a-a3e3-47fc-b2c1-8f9cb864b040",
+      "name": "Extract from SINDICATOS"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/12WpzMPKhwtbPRJaCZPF3XC4UeJMNJvOi/edit?usp=drivesdk&ouid=109702412098255451723&rtpof=true&sd=truehttps://docs.google.com/spreadsheets/d/1NBJ3NANMFJMQ-oHQn1BoUrcixIkmPeHb/edit?usp=sharing&ouid=118080699929393858197&rtpof=true&sd=true",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "id": "28dcc39f-bda3-4ccc-8899-91caf17be47d",
+      "name": "Carregar Base AFASTAMENTO",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -4064,
+        -288
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "l1hRZ0WWCsiKKaAz",
+          "name": "Google Drive agentesemacaoi2a2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -3760,
+        -288
+      ],
+      "id": "00355209-d22b-4cf6-ada5-7e0b051dc737",
+      "name": "Extract from AFASTAMENTO"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1oxbUpT_CPWpbOFyTEnrJkIslByHt8yrD/edit?usp=drivesdk&ouid=109702412098255451723&rtpof=true&sd=truehttps://docs.google.com/spreadsheets/d/17OT1PpG2iubKy9DNUhoW5KLi-EFcbF4r/edit?usp=sharing&ouid=118080699929393858197&rtpof=true&sd=true",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "id": "7ea95c98-75c5-44bc-afd0-124d0526230c",
+      "name": "Carregar Base APRENDIZ",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -4064,
+        -112
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "l1hRZ0WWCsiKKaAz",
+          "name": "Google Drive agentesemacaoi2a2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -3760,
+        -112
+      ],
+      "id": "89f69969-8a17-4be1-8b6b-5c649127eb84",
+      "name": "Extract from APRENDIZ"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1o_HJiUsKdLn7Sm72Fmnt2dWrMG1pfyLL/edit?usp=drivesdk&ouid=109702412098255451723&rtpof=true&sd=truehttps://docs.google.com/spreadsheets/d/1vI37VePP-V8lnhSykL4OfONAlQP3avjE/edit?usp=sharing&ouid=118080699929393858197&rtpof=true&sd=true",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "id": "c02f7273-a746-4183-baed-872ca939121a",
+      "name": "Carregar Base DIAS ÚTEIS",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -4064,
+        -496
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "l1hRZ0WWCsiKKaAz",
+          "name": "Google Drive agentesemacaoi2a2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -3760,
+        -496
+      ],
+      "id": "b599df49-4ba0-4e7e-b782-75b8b721385f",
+      "name": "Extract from BASE DIAS ÚTEIS"
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/1YBRfNaabJrg8W-Tg4JuW-Om1keLWaBna/edit?usp=drivesdk&ouid=109702412098255451723&rtpof=true&sd=truehttps://docs.google.com/spreadsheets/d/1ovfMXH03cieP68XHomUoAowlOCG5Ry8Q/edit?usp=sharing&ouid=118080699929393858197&rtpof=true&sd=true",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "id": "d263ced5-020f-4e78-a207-f53af132d7f2",
+      "name": "Carregar Base ESTAGIO",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -4064,
+        112
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "l1hRZ0WWCsiKKaAz",
+          "name": "Google Drive agentesemacaoi2a2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "download",
+        "fileId": {
+          "__rl": true,
+          "value": "https://docs.google.com/spreadsheets/d/18JRjiSYOQ8f8zwNcfdGGJ-nEwKNLlV0v/edit?usp=drivesdk&ouid=109702412098255451723&rtpof=true&sd=truehttps://docs.google.com/spreadsheets/d/17ZjSfCG84wZ4uqZY05Qa3Q1PALFfBoZZ/edit?usp=sharing&ouid=118080699929393858197&rtpof=true&sd=true",
+          "mode": "url"
+        },
+        "options": {}
+      },
+      "id": "6c26ee57-8cc5-41e7-9dc6-1a6fd5c73b50",
+      "name": "Carregar Base EXTERIOR",
+      "type": "n8n-nodes-base.googleDrive",
+      "typeVersion": 3,
+      "position": [
+        -4064,
+        336
+      ],
+      "alwaysOutputData": true,
+      "credentials": {
+        "googleDriveOAuth2Api": {
+          "id": "l1hRZ0WWCsiKKaAz",
+          "name": "Google Drive agentesemacaoi2a2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -3760,
+        112
+      ],
+      "id": "d118a2a5-212f-4a73-915b-769004654a78",
+      "name": "Extract from ESTAGIO"
+    },
+    {
+      "parameters": {
+        "operation": "xlsx",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.extractFromFile",
+      "typeVersion": 1,
+      "position": [
+        -3760,
+        336
+      ],
+      "id": "97162394-f7e8-4e85-97cd-fc5f6e54c7fb",
+      "name": "Extract from EXTERIOR"
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "MATRICULA",
+        "joinMode": "keepEverything",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -3520,
+        -1264
+      ],
+      "id": "b9fe0133-0f9e-4d9a-b70b-a8f692262e7a",
+      "name": "AtivosDesligados",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "MATRICULA",
+        "joinMode": "keepEverything",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -3392,
+        -1088
+      ],
+      "id": "1566eb09-6a7c-4538-ad37-44af6f2e147b",
+      "name": "MergeAdmissao",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "MATRICULA",
+        "joinMode": "keepEverything",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -3280,
+        -896
+      ],
+      "id": "3fe58e7b-7b4d-45fc-bf8d-ac1693ef1d94",
+      "name": "MergeFerias",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "SINDICATO",
+        "joinMode": "keepEverything",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -3152,
+        -720
+      ],
+      "id": "c8b9ac31-5193-4ef2-947e-db66b7a10670",
+      "name": "MergeSindicatos",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "SINDICATO",
+        "joinMode": "keepEverything",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -3056,
+        -528
+      ],
+      "id": "ea16d281-5d74-49cc-b717-76982b93a9fb",
+      "name": "MergeBaseDiasUteis",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "MATRICULA",
+        "joinMode": "keepNonMatches",
+        "outputDataFrom": "input1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -2944,
+        -304
+      ],
+      "id": "c530e105-65e8-42ed-8b36-1af2f872a9fe",
+      "name": "ExclusaoAfastamento",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "MATRICULA",
+        "joinMode": "keepNonMatches",
+        "outputDataFrom": "input1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -2832,
+        -128
+      ],
+      "id": "3f2f5c8b-7275-426f-a047-fc71e251af57",
+      "name": "ExclusaoAprendiz",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "MATRICULA",
+        "joinMode": "keepNonMatches",
+        "outputDataFrom": "input1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -2720,
+        96
+      ],
+      "id": "ef375162-a7fe-42b7-a7bc-c7bc109a2326",
+      "name": "ExclusaoEstagio",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "mode": "combine",
+        "fieldsToMatchString": "MATRICULA",
+        "joinMode": "keepNonMatches",
+        "outputDataFrom": "input1",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.merge",
+      "typeVersion": 3.2,
+      "position": [
+        -2560,
+        320
+      ],
+      "id": "a948013e-e394-4571-8296-fa758bd8a269",
+      "name": "Consolidado",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "rule": {
+          "interval": [
+            {
+              "field": "months"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.scheduleTrigger",
+      "typeVersion": 1.2,
+      "position": [
+        -4416,
+        -592
+      ],
+      "id": "d2994589-0779-4e22-acfb-0ce5fe322f53",
+      "name": "AGENDAMENTO"
+    },
+    {
+      "parameters": {
+        "tableId": "CONSOLIDADE_M",
+        "fieldsUi": {
+          "fieldValues": [
+            {
+              "fieldId": "MATRICULA",
+              "fieldValue": "={{ $json.MATRICULA }}"
+            },
+            {
+              "fieldId": "EMPRESA",
+              "fieldValue": "={{ $json.EMPRESA }}"
+            },
+            {
+              "fieldId": "TITULO_DO_CARGO",
+              "fieldValue": "={{ $json.TITULO_DO_CARGO }}"
+            },
+            {
+              "fieldId": "DESC_SITUACAO",
+              "fieldValue": "={{ $json.DESC_SITUACAO }}"
+            },
+            {
+              "fieldId": "SINDICATO",
+              "fieldValue": "={{ $json.SINDICATO }}"
+            },
+            {
+              "fieldId": "DIAS_DE_FERIAS",
+              "fieldValue": "={{ $json.DIAS_DE_FERIAS }}"
+            },
+            {
+              "fieldId": "VALOR",
+              "fieldValue": "={{ $json.VALOR }}"
+            },
+            {
+              "fieldId": "DIAS_UTEIS",
+              "fieldValue": "={{ $json.DIAS_UTEIS }}"
+            },
+            {
+              "fieldId": "ADMISSAO",
+              "fieldValue": "={{ $json.ADMISSAO }}"
+            },
+            {
+              "fieldId": "CARGO",
+              "fieldValue": "={{ $json.CARGO }}"
+            },
+            {
+              "fieldId": "DATA_DEMISSAO",
+              "fieldValue": "={{ $json.DATA_DEMISSAO }}"
+            },
+            {
+              "fieldId": "COMUNICADO_DE_DESLIGAMENTO",
+              "fieldValue": "={{ $json.COMUNICADO_DE_DESLIGAMENTO }}"
+            }
+          ]
+        }
+      },
+      "type": "n8n-nodes-base.supabase",
+      "typeVersion": 1,
+      "position": [
+        -1840,
+        336
+      ],
+      "id": "b4844abf-c62b-4a0b-a1a0-a4eea2024246",
+      "name": "Create a row",
+      "credentials": {
+        "supabaseApi": {
+          "id": "u8ovGkpsj2wOWk8z",
+          "name": "Supabase agentesemacaoi2a2"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "jsCode": "const inputData = $input.all();\nconst filteredData = [];\n\nfor (const item of inputData) {\n  if (item.json) {\n    if (Array.isArray(item.json)) {\n      const filteredArray = item.json.filter(record => {\n        return record.Dias > 0;\n      });\n      \n      if (filteredArray.length > 0) {\n        filteredData.push({\n          json: filteredArray\n        });\n      }\n    } else if (item.json.Dias > 0) {\n      filteredData.push(item);\n    }\n  }\n}\n\nreturn filteredData;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -976,
+        -336
+      ],
+      "id": "fde44069-06ec-46f2-b8d6-eca82db2d159",
+      "name": "Elimina Zerados"
+    },
+    {
+      "parameters": {
+        "jsCode": "// Código para nó Code do n8n — versão mais robusta\nconst inputData = $input.all();\nconst outputData = [];\n\n/**\n * Remove cercas Markdown (```json```), acertos de aspas e tenta extrair\n * a parte que parece JSON (começando em { ou [ até o último } ou ]).\n */\nfunction cleanAndExtractJsonString(value) {\n  if (value === null || value === undefined) return value;\n  let s = String(value).trim();\n\n  // Remove fence de Markdown de abertura com possível linguagem (ex: ```json\\n)\n  s = s.replace(/^```[^\\n]*\\n?/, '').trim();\n  // Remove fence de fechamento se existir\n  s = s.replace(/\\n?```$/, '').trim();\n\n  // Se estiver completamente entre crases simples (inline code), remove\n  if (s.startsWith('`') && s.endsWith('`') && s.length > 1) {\n    s = s.slice(1, -1).trim();\n  }\n\n  // Encontra a primeira chave/colchete e o último fechamento correspondente\n  const idxCurly = s.indexOf('{');\n  const idxSquare = s.indexOf('[');\n  let firstIdx = -1;\n  if (idxCurly === -1) firstIdx = idxSquare;\n  else if (idxSquare === -1) firstIdx = idxCurly;\n  else firstIdx = Math.min(idxCurly, idxSquare);\n\n  if (firstIdx === -1) {\n    // nada que pareça JSON; retorna a string limpa\n    return s;\n  }\n\n  const opening = s[firstIdx];\n  const closing = opening === '{' ? '}' : ']';\n  const lastIdx = s.lastIndexOf(closing);\n  if (lastIdx === -1 || lastIdx <= firstIdx) {\n    // não achou fechamento óbvio; retorna a string limpa\n    return s;\n  }\n\n  // Retorna somente o fragmento que provavelmente é JSON\n  return s.slice(firstIdx, lastIdx + 1).trim();\n}\n\n/**\n * Tenta várias estratégias de parse:\n *  - se for objeto/array já (não string), retorna direto\n *  - limpa cercas e extrai substring JSON\n *  - tenta JSON.parse; se resultar em string, tenta parse novamente (double-encoded)\n *  - se falhar, tenta achar primeiro trecho tipo {...} ou [...] com regex\n */\nfunction tryParseJson(value) {\n  if (value === null || value === undefined) throw new Error('Valor vazio');\n  if (typeof value === 'object') return value; // já é objeto/array\n\n  let candidate = cleanAndExtractJsonString(value);\n  if (!candidate) throw new Error('Conteúdo vazio após limpeza');\n\n  // Se estiver entre aspas (ex: \"\\\"{...}\\\"\"), remove as aspas externas e unescape simples\n  if ((candidate.startsWith('\"') && candidate.endsWith('\"')) ||\n      (candidate.startsWith(\"'\") && candidate.endsWith(\"'\"))) {\n    candidate = candidate.slice(1, -1);\n    candidate = candidate.replace(/\\\\\"/g, '\"').replace(/\\\\'/g, \"'\");\n  }\n\n  try {\n    const parsed = JSON.parse(candidate);\n    // Se parse resultou em string, pode ser JSON duplamente codificado: tenta de novo\n    if (typeof parsed === 'string') {\n      try {\n        return JSON.parse(parsed);\n      } catch (e) {\n        return parsed;\n      }\n    }\n    return parsed;\n  } catch (err) {\n    // tentativa final: extrair primeiro trecho que começa com { ou [ e termina com } ou ]\n    const m = candidate.match(/([{[][\\s\\S]*[}\\]])/);\n    if (m && m[1]) {\n      try {\n        return JSON.parse(m[1]);\n      } catch (e2) {\n        // nada mais a fazer — lança o erro original para tratamento acima\n      }\n    }\n    throw err;\n  }\n}\n\n// Percorre itens de entrada\nfor (const item of inputData) {\n  const data = item.json;\n\n  // se existir data.data e for array => comportamento original\n  if (data && Array.isArray(data.data)) {\n    for (const dataItem of data.data) {\n      // se campo 'output' não existe, pula (ou você pode querer outro comportamento)\n      if (!Object.prototype.hasOwnProperty.call(dataItem, 'output')) {\n        continue;\n      }\n\n      const raw = dataItem.output;\n\n      // Se for explicitamente null ou string vazia, preserva o valor original\n      if (raw === null || raw === '') {\n        // preserva o valor original para que você saiba que veio vazio/nulo\n        outputData.push({\n          json: { output: raw }\n        });\n        continue;\n      }\n\n      try {\n        const parsed = tryParseJson(raw);\n\n        // Se o parse for um array, empilha cada item como um item separado (coloca na raiz)\n        if (Array.isArray(parsed)) {\n          parsed.forEach(pi => outputData.push({ json: pi }));\n        }\n        // Se for objeto, coloca diretamente na raiz\n        else if (typeof parsed === 'object' && parsed !== null) {\n          outputData.push({ json: parsed });\n        }\n        // se for primitivo (string/number), embrulha em uma chave 'value'\n        else {\n          outputData.push({ json: { value: parsed } });\n        }\n      } catch (error) {\n        // Em caso de erro, retorna uma entrada com detalhes (útil para debug)\n        outputData.push({\n          json: {\n            error: 'Erro ao fazer parse do JSON',\n            originalOutput: raw,\n            errorMessage: error.message\n          }\n        });\n      }\n    }\n  } else {\n    // Caso a estrutura seja diferente (por exemplo o próprio item.json tem output),\n    // você pode ajustar este bloco conforme necessário. Por enquanto ignoramos.\n    continue;\n  }\n}\n\nreturn outputData;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -1120,
+        -336
+      ],
+      "id": "f86a4bf1-a276-455e-b12c-22e7274b7d41",
+      "name": "Extrai JSON",
+      "alwaysOutputData": true
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4.1-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4.1-mini"
+        },
+        "options": {
+          "timeout": 100000000
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -1104,
+        96
+      ],
+      "id": "62bcfcec-89a1-447e-9841-ebf4f2be4dfa",
+      "name": "OpenAI",
+      "credentials": {
+        "openAiApi": {
+          "id": "uQnRJhkFUCISDtoN",
+          "name": "OpenAi agentesemacaoi2a2"
+        }
+      }
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        -336
+      ],
+      "id": "e0111e90-e9de-4df5-a954-e1fb7c37615e",
+      "name": "No Operation, do nothing1"
+    },
+    {
+      "parameters": {
+        "jsCode": "\n  const items = $input.all().filter(item => {\n  const empresa = item && item.json && item.json.EMPRESA;\n  const cargo = item && item.json && item.json.CARGO;\n\n  const empresaFilled = empresa !== undefined && empresa !== null && empresa.toString().trim() !== '';\n  const cargoFilled = cargo !== undefined && cargo !== null && cargo.toString().trim() !== '';\n\n  // Mantém o item se EMPRESA OU CARGO estiverem preenchidos\n  return empresaFilled || cargoFilled;\n}).map(item => {\n  // Função para converter data numérica do Excel para YYYYMMDD\n  function excelDateToYYYYMMDD(excelDate) {\n    const num = Number(excelDate);\n    if (!isFinite(num) || num <= 0) return null; // valida número\n\n    // Data base do Excel: 1 de janeiro de 1900 (com ajuste do bug de 1900)\n    const excelEpoch = new Date(1900, 0, 1);\n    const adjustedExcelDate = num > 59 ? num - 2 : num - 1;\n    const jsDate = new Date(excelEpoch.getTime() + (adjustedExcelDate * 24 * 60 * 60 * 1000));\n\n    const year = jsDate.getFullYear();\n    const month = String(jsDate.getMonth() + 1).padStart(2, '0');\n    const day = String(jsDate.getDate()).padStart(2, '0');\n\n    return `${year}${month}${day}`;\n  }\n\n  // Clona o item e o json para não modificar o input original\n  const processedItem = { ...item, json: { ...item.json } };\n\n  // Converte ADMISSAO se for número válido (senão mantém o valor original)\n  if (processedItem.json.ADMISSAO !== undefined && processedItem.json.ADMISSAO !== null && processedItem.json.ADMISSAO.toString().trim() !== '') {\n    const admissaoNumeric = Number(processedItem.json.ADMISSAO);\n    if (!Number.isNaN(admissaoNumeric)) {\n      processedItem.json.ADMISSAO = excelDateToYYYYMMDD(admissaoNumeric);\n    }\n  }\n\n  // Converte DATA_DEMISSAO se for número válido\n  if (processedItem.json.DATA_DEMISSAO !== undefined && processedItem.json.DATA_DEMISSAO !== null && processedItem.json.DATA_DEMISSAO.toString().trim() !== '') {\n    const demissaoNumeric = Number(processedItem.json.DATA_DEMISSAO);\n    if (!Number.isNaN(demissaoNumeric)) {\n      processedItem.json.DATA_DEMISSAO = excelDateToYYYYMMDD(demissaoNumeric);\n    }\n  }\n\n  return processedItem;\n});\n\nreturn items;"
+      },
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        -2320,
+        320
+      ],
+      "id": "6873b6bb-ccb1-4147-8096-4700663be54a",
+      "name": "Excluir registro invalidos"
+    },
+    {
+      "parameters": {
+        "options": {
+          "reset": false
+        }
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -2096,
+        320
+      ],
+      "id": "31ae6609-028c-4e8d-9860-bb89965098a5",
+      "name": "Loop Armazena Dados"
+    },
+    {
+      "parameters": {
+        "batchSize": 100,
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitInBatches",
+      "typeVersion": 3,
+      "position": [
+        -1536,
+        -112
+      ],
+      "id": "38875cd0-2614-4719-b397-d665986f6edb",
+      "name": "Loop Calcula Matricula em Lotes"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "24898970-c923-4a71-8c96-d073930a07de",
+              "name": "records",
+              "value": "={{$json}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1280,
+        -112
+      ],
+      "id": "5127cd4a-099a-43c9-9cb2-d192fc682ca6",
+      "name": "Converte em String"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.manualTrigger",
+      "typeVersion": 1,
+      "position": [
+        -1984,
+        -112
+      ],
+      "id": "5242a8e5-4d25-4f82-9148-3666cc8187c8",
+      "name": "When clicking ‘Execute workflow’"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        -1840,
+        176
+      ],
+      "id": "fb41db9a-384b-4f1f-9512-544644fe7120",
+      "name": "No Operation, do nothing"
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "Supabase": {
+      "main": [
+        [
+          {
+            "node": "Loop Calcula Matricula em Lotes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AI Agent": {
+      "main": [
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Loop Calcula Matricula em Lotes",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Agregar os lotes": {
+      "main": [
+        [
+          {
+            "node": "Extrai JSON",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Convert to File": {
+      "main": [
+        [
+          {
+            "node": "Upload file",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Upload file": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Carregar Base ATIVOS": {
+      "main": [
+        [
+          {
+            "node": "Extract from ATIVOS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Carregar Base FÉRIAS": {
+      "main": [
+        [
+          {
+            "node": "Extract from FÉRIAS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Carregar Base DESLIGADOS": {
+      "main": [
+        [
+          {
+            "node": "Extract from DESLIGADOS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Carregar Base ADMISSÃO": {
+      "main": [
+        [
+          {
+            "node": "Extract from ADMISSÃO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Carregar Base SINDICATOS": {
+      "main": [
+        [
+          {
+            "node": "Extract from SINDICATOS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from ATIVOS": {
+      "main": [
+        [
+          {
+            "node": "AtivosDesligados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from FÉRIAS": {
+      "main": [
+        [
+          {
+            "node": "MergeFerias",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Extract from DESLIGADOS": {
+      "main": [
+        [
+          {
+            "node": "AtivosDesligados",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Extract from ADMISSÃO": {
+      "main": [
+        [
+          {
+            "node": "MergeAdmissao",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Extract from SINDICATOS": {
+      "main": [
+        [
+          {
+            "node": "MergeSindicatos",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Carregar Base AFASTAMENTO": {
+      "main": [
+        [
+          {
+            "node": "Extract from AFASTAMENTO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from AFASTAMENTO": {
+      "main": [
+        [
+          {
+            "node": "ExclusaoAfastamento",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Carregar Base APRENDIZ": {
+      "main": [
+        [
+          {
+            "node": "Extract from APRENDIZ",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from APRENDIZ": {
+      "main": [
+        [
+          {
+            "node": "ExclusaoAprendiz",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Carregar Base DIAS ÚTEIS": {
+      "main": [
+        [
+          {
+            "node": "Extract from BASE DIAS ÚTEIS",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from BASE DIAS ÚTEIS": {
+      "main": [
+        [
+          {
+            "node": "MergeBaseDiasUteis",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Carregar Base ESTAGIO": {
+      "main": [
+        [
+          {
+            "node": "Extract from ESTAGIO",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Carregar Base EXTERIOR": {
+      "main": [
+        [
+          {
+            "node": "Extract from EXTERIOR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extract from ESTAGIO": {
+      "main": [
+        [
+          {
+            "node": "ExclusaoEstagio",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "Extract from EXTERIOR": {
+      "main": [
+        [
+          {
+            "node": "Consolidado",
+            "type": "main",
+            "index": 1
+          }
+        ]
+      ]
+    },
+    "AtivosDesligados": {
+      "main": [
+        [
+          {
+            "node": "MergeAdmissao",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MergeAdmissao": {
+      "main": [
+        [
+          {
+            "node": "MergeFerias",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MergeFerias": {
+      "main": [
+        [
+          {
+            "node": "MergeSindicatos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MergeSindicatos": {
+      "main": [
+        [
+          {
+            "node": "MergeBaseDiasUteis",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "MergeBaseDiasUteis": {
+      "main": [
+        [
+          {
+            "node": "ExclusaoAfastamento",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ExclusaoAfastamento": {
+      "main": [
+        [
+          {
+            "node": "ExclusaoAprendiz",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ExclusaoAprendiz": {
+      "main": [
+        [
+          {
+            "node": "ExclusaoEstagio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ExclusaoEstagio": {
+      "main": [
+        [
+          {
+            "node": "Consolidado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Consolidado": {
+      "main": [
+        [
+          {
+            "node": "Excluir registro invalidos",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "AGENDAMENTO": {
+      "main": [
+        [
+          {
+            "node": "Carregar Base ATIVOS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Carregar Base DESLIGADOS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Carregar Base ADMISSÃO",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Carregar Base FÉRIAS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Carregar Base SINDICATOS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Carregar Base DIAS ÚTEIS",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Carregar Base AFASTAMENTO",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Carregar Base APRENDIZ",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Carregar Base ESTAGIO",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Carregar Base EXTERIOR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a row": {
+      "main": [
+        [
+          {
+            "node": "Loop Armazena Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Elimina Zerados": {
+      "main": [
+        [
+          {
+            "node": "Convert to File",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extrai JSON": {
+      "main": [
+        [
+          {
+            "node": "Elimina Zerados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Excluir registro invalidos": {
+      "main": [
+        [
+          {
+            "node": "Loop Armazena Dados",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Armazena Dados": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Create a row",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Loop Calcula Matricula em Lotes": {
+      "main": [
+        [
+          {
+            "node": "Agregar os lotes",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Converte em String",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Converte em String": {
+      "main": [
+        [
+          {
+            "node": "AI Agent",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "When clicking ‘Execute workflow’": {
+      "main": [
+        [
+          {
+            "node": "Supabase",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "008a4e1f-d1e7-4883-88e1-8f338141053c",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "7c8f181b5921934f021c512c99bef9e7570c43577a5969a235e431b219f74b49"
+  },
+  "id": "6BIvnK1lG0Y8KIwc",
+  "tags": [
+    {
+      "createdAt": "2025-03-11T03:19:58.326Z",
+      "updatedAt": "2025-03-11T03:19:58.326Z",
+      "id": "M7I7BewyzkhOsTsQ",
+      "name": "Funcionando"
+    }
+  ]
+}
